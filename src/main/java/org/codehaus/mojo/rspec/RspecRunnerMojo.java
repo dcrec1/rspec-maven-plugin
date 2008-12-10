@@ -56,7 +56,7 @@ public class RspecRunnerMojo extends AbstractMojo {
 	 * The directory where JRuby is installed (optional, defaults to
 	 * "${user.home}/.jruby")
 	 * 
-	 * @parameter expression="${user.home}/.jruby"
+	 * @parameter expression="${env.JRUBY_HOME}"
 	 */
 	private String jrubyHome;
 
@@ -83,9 +83,10 @@ public class RspecRunnerMojo extends AbstractMojo {
 
 		if (jrubyHome == null) {
 			throw new MojoExecutionException(
-					"jrubyHome directory not specified");
+					"$JRUBY_HOME or jrubyHome directory not specified");
 		}
 		Ruby runtime = Ruby.newInstance();
+		getLog().info("JRuby Home: " + jrubyHome);
 		runtime.setJRubyHome(jrubyHome);
 		runtime.getLoadService().init(classpathElements);
 
