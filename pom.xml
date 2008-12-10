@@ -39,6 +39,11 @@
 			<name>Mauro Talevi</name>
 			<timezone>0</timezone>
 		</developer>
+		<developer>
+			<id>dcrec1</id>
+			<name>Diego Carrion</name>
+			<timezone>0</timezone>
+		</developer>
 	</developers>
 	<contributors />
 	<dependencies>
