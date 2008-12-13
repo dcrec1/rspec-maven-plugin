@@ -2,16 +2,20 @@ h2. CONFIGURATION
 
 Just put this in your pom.xml:
 
-<code><plugin>
-  <groupId>org.codehaus.mojo</groupId>
-  <artifactId>rspec-maven-plugin</artifactId>
-  <executions>
-    <execution>
-      <id>test</id>
-      <phase>test</phase>
-      <goals>
-        <goal>spec</goal>
-      </goals>
-    </execution>
-  </executions>
-</plugin></code>
+<pre>
+<code>
+<plugin>
+    <groupId>org.codehaus.mojo</groupId>
+    <artifactId>rspec-maven-plugin</artifactId>
+    <executions>
+        <execution>
+            <id>test</id>
+            <phase>test</phase>
+            <goals>
+                <goal>spec</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+</code>
+</pre>
