@@ -1,11 +1,9 @@
 h2. INSTALLATION
 
 <pre>
-<code>
-git clone git://github.com/dcrec1/rspec-maven-plugin.git
+<code>git clone git://github.com/dcrec1/rspec-maven-plugin.git
 cd rspec-maven-plugin
-mvn install
-</code>
+mvn install</code>
 </pre>
 
 h2. CONFIGURATION
