@@ -1,3 +1,11 @@
+h2. INSTALLATION
+
+<code>
+git clone git://github.com/dcrec1/rspec-maven-plugin.git
+cd rspec-maven-plugin
+mvn install
+</code>
+
 h2. CONFIGURATION
 
 Just put this in your pom.xml:
