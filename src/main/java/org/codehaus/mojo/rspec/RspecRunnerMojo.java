@@ -117,9 +117,8 @@ public class RspecRunnerMojo extends AbstractMojo {
 
 		getLog().info("Verifying if there were failures");
 		script = new StringBuilder();
-		script
-				.append(
-						"if File.new(@report_file, 'r').read =~ /, 0 failures/ \n")
+		script.append(
+				"if File.new(@report_file, 'r').read =~ /, 0 failures/ \n")
 				.append(" false\n").append("else\n").append(" true\n").append(
 						"end");
 
@@ -149,6 +148,7 @@ public class RspecRunnerMojo extends AbstractMojo {
 				script.append("require '").append(path).append("'\n");
 			} else {
 				// handling directories
+				getLog().info("Adding to Ruby Class Loader: " + path);
 				runtime.getJRubyClassLoader().addURL(
 						new URL("file:" + path + "/"));
 			}
