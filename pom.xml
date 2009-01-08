@@ -10,7 +10,7 @@
 	<name>RSpec Maven Plugin</name>
 	<description>Maven plugin to execute Ruby Spec tests</description>
 	<packaging>maven-plugin</packaging>
-	<version>1.0-beta-6</version>
+	<version>1.0-beta-8</version>
 	<inceptionYear>2007</inceptionYear>
 	<organization>
 		<name>Codehaus</name>
@@ -71,4 +71,13 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<distributionManagement>
+		<!-- use the following if you're not using a snapshot version. -->
+		<repository>
+			<id>arti-releases</id>
+			<name>Artifactory Gonow</name>
+			<url>http://artifactory.gonow.intranet:8080/artifactory/gonow-repository</url>
+		</repository>
+	</distributionManagement>
 </project>
