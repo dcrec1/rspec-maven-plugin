@@ -8,43 +8,8 @@
 	</parent>
 	<artifactId>rspec-maven-plugin</artifactId>
 	<name>RSpec Maven Plugin</name>
-	<description>Maven plugin to execute Ruby Spec tests</description>
 	<packaging>maven-plugin</packaging>
 	<version>1.0-beta-9</version>
-	<inceptionYear>2007</inceptionYear>
-	<organization>
-		<name>Codehaus</name>
-	</organization>
-	<prerequisites>
-		<maven>2.0</maven>
-	</prerequisites>
-	<issueManagement>
-		<system>jira</system>
-		<url>http://jira.codehaus.org/browse/MRSPEC</url>
-	</issueManagement>
-	<licenses>
-		<license>
-			<name>ASF 2.0 license</name>
-			<url>http://www.apache.org/licenses/LICENSE-2.0</url>
-		</license>
-	</licenses>
-	<developers>
-		<developer>
-			<id>mward</id>
-			<name>Mike Ward</name>
-			<timezone>-6</timezone>
-		</developer>
-		<developer>
-			<id>mauro</id>
-			<name>Mauro Talevi</name>
-			<timezone>0</timezone>
-		</developer>
-		<developer>
-			<id>dcrec1</id>
-			<name>Diego Carrion</name>
-			<timezone>0</timezone>
-		</developer>
-	</developers>
 	<contributors />
 	<dependencies>
 		<dependency>
