@@ -85,7 +85,7 @@ public class RspecRunnerMojo extends AbstractMojo {
 			throw new MojoExecutionException(
 					"$JRUBY_HOME or jrubyHome directory not specified");
 		}
-		
+
 		Ruby runtime = Ruby.newInstance();
 		getLog().info("JRuby Home: " + jrubyHome);
 		runtime.setJRubyHome(jrubyHome);
@@ -112,7 +112,7 @@ public class RspecRunnerMojo extends AbstractMojo {
 				.append("'\n")
 				.append(
 						"options = ::Spec::Runner::OptionParser.parse([spec_dir, '-f', \"html:#{@report_file}\"], STDERR, STDOUT)\n")
-				 .append("::Spec::Runner::CommandLine.run(options)\n");
+				.append("::Spec::Runner::CommandLine.run(options)\n");
 
 		runtime.evalScriptlet(script.toString());
 
@@ -127,18 +127,18 @@ public class RspecRunnerMojo extends AbstractMojo {
 				.toString());
 
 		if (failure.isTrue()) {
-			String message = "RSpec tests failed. See '" + reportPath
+			String msg = "RSpec tests failed. See '" + reportPath
 					+ "' for details.";
-			getLog().warn(message);
+			getLog().warn(msg);
 			if (!ignoreFailure) {
-				throw new MojoFailureException(message);
+				throw new MojoFailureException(msg);
 			}
 		} else {
-			getLog().info(
-					"RSpec tests successful. See '" + reportPath
-							+ "' for details.");
+			String msg = "RSpec tests successful. See '" + reportPath
+					+ "' for details.";
+			getLog().info(msg);
 		}
-		
+
 	}
 
 	private String handleClasspathElements(Ruby runtime)
