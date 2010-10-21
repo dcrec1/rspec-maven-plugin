@@ -2,9 +2,8 @@ package org.codehaus.mojo.rspec;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.List;
+import java.util.Scanner;
 
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.jruby.Ruby;
@@ -12,8 +11,6 @@ import org.jruby.RubyBoolean;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
-import org.openqa.selenium.server.RemoteControlConfiguration;
-import org.openqa.selenium.server.SeleniumServer;
 
 /**
  * Mojo to run Ruby Spec test
@@ -24,101 +21,53 @@ import org.openqa.selenium.server.SeleniumServer;
  * @author Andre Goncalves
  * @goal spec
  */
-public class RspecRunnerMojo extends AbstractMojo {
-
-	/**
-	 * The classpath elements of the project being tested.
-	 * 
-	 * @parameter expression="${project.testClasspathElements}"
-	 * @required
-	 * @readonly
-	 */
-	private List<String> classpathElements;
-
-	/**
-	 * The directory containing the RSpec source files
-	 * 
-	 * @parameter expression="${basedir}/spec"
-	 * @required
-	 */
-	private String sourceDirectory;
-
-	/**
-	 * The directory where the RSpec report will be written to
-	 * 
-	 * @parameter expression="${basedir}/target"
-	 * @required
-	 */
-	private String outputDirectory;
-
-	/**
-	 * The name of the RSpec report (optional, defaults to "rspec_report.html")
-	 * 
-	 * @parameter expression="rspec_report.html"
-	 */
-	private String reportName;
-
-	/**
-	 * The directory where JRuby is installed (optional, defaults to
-	 * "${user.home}/.jruby")
-	 * 
-	 * @parameter expression="${env.JRUBY_HOME}"
-	 */
-	private String jrubyHome;
-
-	/**
-	 * The flag to ignore failures (optional, defaults to "false")
-	 * 
-	 * @parameter expression="false"
-	 */
-	private boolean ignoreFailure;
-
-	/**
-	 * The flag to skip tests (optional, defaults to "false")
-	 * 
-	 * @parameter expression="false"
-	 */
-	private boolean skipTests;
-
-	/**
-	 * The flag to start selenium server (optional, defaults to "false")
-	 * 
-	 * @parameter expression="false"
-	 */
-	private boolean runSeleniumServer;
-
-	/**
-	 * The selenium server port (optional, defaults to "4444")
-	 * 
-	 * @parameter expression="4444"
-	 */
-	private int seleniumPort;
-
+public final class RspecRunnerMojo extends AbstractRspecMojo {
 	
-	private SeleniumServer server;
-
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		if (runSeleniumServer) {
-			startSelenium();
-		}
-
-		if (skipTests) {
-			getLog().info("Skipping RSpec tests");
+		if (!canRun()) {
 			return;
 		}
-		getLog().info("Running RSpec tests from " + sourceDirectory);
+		final Ruby runtime = ruby();
+		final String script = script(runtime);
+		boolean result = run(runtime, script);
+		processResults(result);
+	}
 
-		if (jrubyHome == null) {
-			throw new MojoExecutionException(
-					"$JRUBY_HOME or jrubyHome directory not specified");
+	private boolean canRun() throws MojoExecutionException {
+		if (skipTests) {
+			getLog().info("Skipping RSpec tests");
+			return false;
 		}
+		validateRubyHome();
+		return true;
+	}
 
-		Ruby runtime = Ruby.newInstance();
-		getLog().info("JRuby Home: " + jrubyHome);
-		runtime.setJRubyHome(jrubyHome);
-		runtime.getLoadService().init(classpathElements);
+	private void processResults(boolean result) throws MojoFailureException {
+		if (!result) {
+			String msg = "RSpec tests failed. See '" + reportFile()
+					+ "' for details.";
+			getLog().warn(msg);
+			if (!ignoreFailure) {
+				throw new MojoFailureException(msg);
+			}
+		} else {
+			String msg = "RSpec tests successful. See '" + reportFile()
+					+ "' for details.";
+			getLog().info(msg);
+		}
+	}
 
-		String reportFile = outputDirectory + "/" + reportName;
+	private boolean run(final Ruby runtime, final String script) {
+		getLog().info("Running RSpec tests from " + sourceDirectory);
+		RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
+		IRubyObject o = evaler.eval(runtime, script.toString());
+		boolean result = ((RubyBoolean) JavaEmbedUtils.invokeMethod(runtime, o,
+				"run", new Object[] { sourceDirectory, reportFile() },
+				(Class<?>) RubyBoolean.class)).isTrue();
+		return result;
+	}
+
+	private String script(final Ruby runtime) throws MojoExecutionException {
 		StringBuilder script = new StringBuilder();
 		try {
 			script.append(handleClasspathElements(runtime));
@@ -126,49 +75,34 @@ public class RspecRunnerMojo extends AbstractMojo {
 			throw new MojoExecutionException(e.getMessage());
 		}
 
-		String e = "require 'rubygems'\nrequire 'rspec/core/rake_task'\n\nrequire 'rspec/core'\ndef run\nRSpec::Core::Runner.module_eval \"\"\"\n def self.autorun_with_args(args)\n return if autorun_disabled? || installed_at_exit? || running_in_drb?\n  @installed_at_exit = true \n   run(args, $stderr, $stdout)\n end\n\"\"\"\n"
-				+ "\nRSpec::Core::Runner.autorun_with_args(['"
-				+ sourceDirectory
-				+ "', '-f', 'html', '-o', '"
-				+ reportFile
-				+ "'])\nend";
-		System.out.println(script);
-		RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
-		IRubyObject o = evaler.eval(runtime, e);
-		boolean result = ((RubyBoolean) JavaEmbedUtils.invokeMethod(runtime, o,
-				"run", new Object[] {}, (Class<?>) RubyBoolean.class)).isTrue();
+		script.append(loadRubyScript());
+		return script.toString();
+	}
 
-		if (!result) {
-			String msg = "RSpec tests failed. See '" + reportFile
-					+ "' for details.";
-			getLog().warn(msg);
-			if (!ignoreFailure) {
-				throw new MojoFailureException(msg);
-			}
-		} else {
-			String msg = "RSpec tests successful. See '" + reportFile
-					+ "' for details.";
-			getLog().info(msg);
-		}
+	private String reportFile() {
+		String reportFile = outputDirectory + "/" + reportName;
+		return reportFile;
+	}
 
-		if (runSeleniumServer) {
-			stopSelenium();
+	private Ruby ruby() {
+		Ruby runtime = Ruby.newInstance();
+		getLog().info("JRuby Home: " + jrubyHome);
+		runtime.setJRubyHome(jrubyHome);
+		runtime.getLoadService().init(classpathElements);
+		return runtime;
+	}
+
+	private void validateRubyHome() throws MojoExecutionException {
+		if (jrubyHome == null) {
+			throw new MojoExecutionException(
+					"$JRUBY_HOME or jrubyHome directory not specified");
 		}
 	}
 
-	private void stopSelenium() {
-		server.stop();
-	}
-
-	private void startSelenium() throws MojoExecutionException {
-		try {
-			RemoteControlConfiguration config = new RemoteControlConfiguration();
-			config.setPort(seleniumPort);
-			server = new SeleniumServer(config);
-			server.start();
-		} catch (Exception e2) {
-			throw new MojoExecutionException("cannot start selenium server", e2);
-		}
+	private String loadRubyScript() {
+		return new Scanner(Thread.currentThread().getContextClassLoader()
+				.getResourceAsStream("RSpecRunner.rb")).useDelimiter("\\Z")
+				.next();
 	}
 
 	private String handleClasspathElements(Ruby runtime)
