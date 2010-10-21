@@ -9,10 +9,10 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.jruby.Ruby;
 import org.jruby.RubyBoolean;
-import org.jruby.RubyInstanceConfig;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
+import org.openqa.selenium.server.RemoteControlConfiguration;
 import org.openqa.selenium.server.SeleniumServer;
 
 /**
@@ -21,6 +21,7 @@ import org.openqa.selenium.server.SeleniumServer;
  * @author Michael Ward
  * @author Mauro Talevi
  * @author Diego Carrion
+ * @author Andre Goncalves
  * @goal spec
  */
 public class RspecRunnerMojo extends AbstractMojo {
@@ -80,12 +81,20 @@ public class RspecRunnerMojo extends AbstractMojo {
 	private boolean skipTests;
 
 	/**
-	 * The flag to start selenium server (optional, defaults to "true")
+	 * The flag to start selenium server (optional, defaults to "false")
 	 * 
-	 * @parameter expression="true"
+	 * @parameter expression="false"
 	 */
 	private boolean runSeleniumServer;
 
+	/**
+	 * The selenium server port (optional, defaults to "4444")
+	 * 
+	 * @parameter expression="4444"
+	 */
+	private int seleniumPort;
+
+	
 	private SeleniumServer server;
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
@@ -104,15 +113,12 @@ public class RspecRunnerMojo extends AbstractMojo {
 					"$JRUBY_HOME or jrubyHome directory not specified");
 		}
 
-		RubyInstanceConfig c = new RubyInstanceConfig();
-		c.setArgv(new String[] { sourceDirectory, "-f", "html", "-o",
-				"out.html" });
-		Ruby runtime = Ruby.newInstance(c);
+		Ruby runtime = Ruby.newInstance();
 		getLog().info("JRuby Home: " + jrubyHome);
 		runtime.setJRubyHome(jrubyHome);
 		runtime.getLoadService().init(classpathElements);
 
-		String reportPath = "target/report.html";
+		String reportFile = outputDirectory + "/" + reportName;
 		StringBuilder script = new StringBuilder();
 		try {
 			script.append(handleClasspathElements(runtime));
@@ -124,7 +130,7 @@ public class RspecRunnerMojo extends AbstractMojo {
 				+ "\nRSpec::Core::Runner.autorun_with_args(['"
 				+ sourceDirectory
 				+ "', '-f', 'html', '-o', '"
-				+ reportPath
+				+ reportFile
 				+ "'])\nend";
 		System.out.println(script);
 		RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
@@ -133,14 +139,14 @@ public class RspecRunnerMojo extends AbstractMojo {
 				"run", new Object[] {}, (Class<?>) RubyBoolean.class)).isTrue();
 
 		if (!result) {
-			String msg = "RSpec tests failed. See '" + reportPath
+			String msg = "RSpec tests failed. See '" + reportFile
 					+ "' for details.";
 			getLog().warn(msg);
 			if (!ignoreFailure) {
 				throw new MojoFailureException(msg);
 			}
 		} else {
-			String msg = "RSpec tests successful. See '" + reportPath
+			String msg = "RSpec tests successful. See '" + reportFile
 					+ "' for details.";
 			getLog().info(msg);
 		}
@@ -156,7 +162,9 @@ public class RspecRunnerMojo extends AbstractMojo {
 
 	private void startSelenium() throws MojoExecutionException {
 		try {
-			server = new SeleniumServer();
+			RemoteControlConfiguration config = new RemoteControlConfiguration();
+			config.setPort(seleniumPort);
+			server = new SeleniumServer(config);
 			server.start();
 		} catch (Exception e2) {
 			throw new MojoExecutionException("cannot start selenium server", e2);
