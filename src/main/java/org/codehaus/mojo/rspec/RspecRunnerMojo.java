@@ -9,6 +9,10 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.jruby.Ruby;
 import org.jruby.RubyBoolean;
+import org.jruby.RubyInstanceConfig;
+import org.jruby.RubyRuntimeAdapter;
+import org.jruby.javasupport.JavaEmbedUtils;
+import org.jruby.runtime.builtin.IRubyObject;
 
 /**
  * Mojo to run Ruby Spec test
@@ -75,6 +79,7 @@ public class RspecRunnerMojo extends AbstractMojo {
 	private boolean skipTests;
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
+		getLog().info(">>>>>>>>>>>>>>>>> merda");
 		if (skipTests) {
 			getLog().info("Skipping RSpec tests");
 			return;
@@ -86,12 +91,15 @@ public class RspecRunnerMojo extends AbstractMojo {
 					"$JRUBY_HOME or jrubyHome directory not specified");
 		}
 
-		Ruby runtime = Ruby.newInstance();
+		RubyInstanceConfig c = new RubyInstanceConfig();
+		c.setArgv(new String[] { sourceDirectory, "-f", "html", "-o",
+				"out.html" });
+		Ruby runtime = Ruby.newInstance(c);
 		getLog().info("JRuby Home: " + jrubyHome);
 		runtime.setJRubyHome(jrubyHome);
 		runtime.getLoadService().init(classpathElements);
 
-		// Build ruby script to run RSpec's
+		String reportPath = "target/report.html";
 		StringBuilder script = new StringBuilder();
 		try {
 			script.append(handleClasspathElements(runtime));
@@ -99,34 +107,20 @@ public class RspecRunnerMojo extends AbstractMojo {
 			throw new MojoExecutionException(e.getMessage());
 		}
 
-		// Run all specs
-		String reportPath = outputDirectory + "/" + reportName;
-		script
-				.append("require 'rubygems'\n")
-				.append("require 'spec'\n")
-				.append("spec_dir = '")
-				.append(sourceDirectory)
-				.append("'\n")
-				.append("@report_file = '")
-				.append(reportPath)
-				.append("'\n")
-				.append(
-						"options = ::Spec::Runner::OptionParser.parse([spec_dir, '-f', \"html:#{@report_file}\"], STDERR, STDOUT)\n")
-				.append("::Spec::Runner::CommandLine.run(options)\n");
+		String e = "require 'rubygems'\nrequire 'rspec/core/rake_task'\n\nrequire 'rspec/core'\ndef run\nputs  'aqui'\nRSpec::Core::Runner.module_eval \"\"\"\n def self.autorun_with_args(args)\n return if autorun_disabled? || installed_at_exit? || running_in_drb?\n  @installed_at_exit = true \n   run(args, $stderr, $stdout)\n end\n\"\"\"\n"
+				+ "\nRSpec::Core::Runner.autorun_with_args(['"
+				+ sourceDirectory
+				+ "', '-f', 'html', '-o', '"
+				+ reportPath
+				+ "'])\nend";
+		System.out.println(script);
+		RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
+		IRubyObject o = evaler.eval(runtime, e);
+		boolean result = ((RubyBoolean) JavaEmbedUtils.invokeMethod(runtime, o,
+				"run", new Object[] {}, (Class) RubyBoolean.class)).isTrue();
+		
 
-		runtime.evalScriptlet(script.toString());
-
-		getLog().info("Verifying if there were failures");
-		script = new StringBuilder();
-		script.append(
-				"if File.new(@report_file, 'r').read =~ /, 0 failures/ \n")
-				.append(" false\n").append("else\n").append(" true\n").append(
-						"end");
-
-		RubyBoolean failure = (RubyBoolean) runtime.evalScriptlet(script
-				.toString());
-
-		if (failure.isTrue()) {
+		if (!result) {
 			String msg = "RSpec tests failed. See '" + reportPath
 					+ "' for details.";
 			getLog().warn(msg);
