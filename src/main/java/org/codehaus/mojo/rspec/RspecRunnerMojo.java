@@ -13,6 +13,7 @@ import org.jruby.RubyInstanceConfig;
 import org.jruby.RubyRuntimeAdapter;
 import org.jruby.javasupport.JavaEmbedUtils;
 import org.jruby.runtime.builtin.IRubyObject;
+import org.openqa.selenium.server.SeleniumServer;
 
 /**
  * Mojo to run Ruby Spec test
@@ -78,8 +79,20 @@ public class RspecRunnerMojo extends AbstractMojo {
 	 */
 	private boolean skipTests;
 
+	/**
+	 * The flag to start selenium server (optional, defaults to "true")
+	 * 
+	 * @parameter expression="true"
+	 */
+	private boolean runSeleniumServer;
+
+	private SeleniumServer server;
+
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		getLog().info(">>>>>>>>>>>>>>>>> merda");
+		if (runSeleniumServer) {
+			startSelenium();
+		}
+
 		if (skipTests) {
 			getLog().info("Skipping RSpec tests");
 			return;
@@ -107,7 +120,7 @@ public class RspecRunnerMojo extends AbstractMojo {
 			throw new MojoExecutionException(e.getMessage());
 		}
 
-		String e = "require 'rubygems'\nrequire 'rspec/core/rake_task'\n\nrequire 'rspec/core'\ndef run\nputs  'aqui'\nRSpec::Core::Runner.module_eval \"\"\"\n def self.autorun_with_args(args)\n return if autorun_disabled? || installed_at_exit? || running_in_drb?\n  @installed_at_exit = true \n   run(args, $stderr, $stdout)\n end\n\"\"\"\n"
+		String e = "require 'rubygems'\nrequire 'rspec/core/rake_task'\n\nrequire 'rspec/core'\ndef run\nRSpec::Core::Runner.module_eval \"\"\"\n def self.autorun_with_args(args)\n return if autorun_disabled? || installed_at_exit? || running_in_drb?\n  @installed_at_exit = true \n   run(args, $stderr, $stdout)\n end\n\"\"\"\n"
 				+ "\nRSpec::Core::Runner.autorun_with_args(['"
 				+ sourceDirectory
 				+ "', '-f', 'html', '-o', '"
@@ -117,8 +130,7 @@ public class RspecRunnerMojo extends AbstractMojo {
 		RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
 		IRubyObject o = evaler.eval(runtime, e);
 		boolean result = ((RubyBoolean) JavaEmbedUtils.invokeMethod(runtime, o,
-				"run", new Object[] {}, (Class) RubyBoolean.class)).isTrue();
-		
+				"run", new Object[] {}, (Class<?>) RubyBoolean.class)).isTrue();
 
 		if (!result) {
 			String msg = "RSpec tests failed. See '" + reportPath
@@ -133,6 +145,22 @@ public class RspecRunnerMojo extends AbstractMojo {
 			getLog().info(msg);
 		}
 
+		if (runSeleniumServer) {
+			stopSelenium();
+		}
+	}
+
+	private void stopSelenium() {
+		server.stop();
+	}
+
+	private void startSelenium() throws MojoExecutionException {
+		try {
+			server = new SeleniumServer();
+			server.start();
+		} catch (Exception e2) {
+			throw new MojoExecutionException("cannot start selenium server", e2);
+		}
 	}
 
 	private String handleClasspathElements(Ruby runtime)
