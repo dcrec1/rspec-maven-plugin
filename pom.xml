@@ -9,7 +9,7 @@
 	<artifactId>rspec-maven-plugin</artifactId>
 	<name>RSpec Maven Plugin</name>
 	<packaging>maven-plugin</packaging>
-	<version>1.0-beta-10</version>
+	<version>1.0-beta-11</version>
 	<contributors />
 	<dependencies>
 		<dependency>

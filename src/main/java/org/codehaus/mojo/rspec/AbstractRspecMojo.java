@@ -6,10 +6,11 @@ import org.apache.maven.plugin.AbstractMojo;
 
 /**
  * Just holds mojo properties to make Mojo real code cleaner
+ * 
  * @author andre
- *
+ * 
  */
-public abstract class AbstractRspecMojo extends AbstractMojo{
+public abstract class AbstractRspecMojo extends AbstractMojo {
 	/**
 	 * The classpath elements of the project being tested.
 	 * 
@@ -63,4 +64,12 @@ public abstract class AbstractRspecMojo extends AbstractMojo{
 	 * @parameter expression="false"
 	 */
 	protected boolean skipTests;
+
+	/**
+	 * Allows the server startup to be skipped.
+	 * 
+	 * @parameter expression="${maven.test.skip}" default-value="false"
+	 * @since 1.0-beta-2
+	 */
+	protected boolean skip;
 }

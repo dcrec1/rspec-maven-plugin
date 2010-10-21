@@ -34,7 +34,7 @@ public final class RspecRunnerMojo extends AbstractRspecMojo {
 	}
 
 	private boolean canRun() throws MojoExecutionException {
-		if (skipTests) {
+		if (skipTests || skip) {
 			getLog().info("Skipping RSpec tests");
 			return false;
 		}
