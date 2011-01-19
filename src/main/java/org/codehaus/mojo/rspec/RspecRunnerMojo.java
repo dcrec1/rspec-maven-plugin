@@ -62,7 +62,7 @@ public final class RspecRunnerMojo extends AbstractRspecMojo {
 		RubyRuntimeAdapter evaler = JavaEmbedUtils.newRuntimeAdapter();
 		IRubyObject o = evaler.eval(runtime, script.toString());
 		boolean result = ((RubyBoolean) JavaEmbedUtils.invokeMethod(runtime, o,
-				"run", new Object[] { sourceDirectory, reportFile() },
+				"run", new Object[] { sourceDirectory, requiredModules, reportFile() },
 				(Class<?>) RubyBoolean.class)).isTrue();
 		return result;
 	}

@@ -72,4 +72,12 @@ public abstract class AbstractRspecMojo extends AbstractMojo {
 	 * @since 1.0-beta-2
 	 */
 	protected boolean skip;
+
+	/**
+	 * A comma separated list of required modules (optional,
+	 * defaults to nothing).
+	 * 
+	 * @parameter expression=""
+	 */
+	protected String requiredModules;
 }
